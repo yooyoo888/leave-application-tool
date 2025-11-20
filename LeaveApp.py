@@ -14,6 +14,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import sys
 import os
 import subprocess
@@ -166,8 +168,9 @@ def confirm_info(target_time, start_date, end_date):
 def setup_driver():
     """設定 Chrome WebDriver"""
     print("\n[初始化] 正在啟動瀏覽器...")
+    print("[提示] 首次執行會下載 ChromeDriver...")
+    
     options = Options()
-    # options.add_argument('--headless')  # 無頭模式（背景執行）
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -175,7 +178,9 @@ def setup_driver():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
 
-    driver = webdriver.Chrome(options=options)
+    # 使用 webdriver-manager
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
     driver.maximize_window()
     return driver
 
