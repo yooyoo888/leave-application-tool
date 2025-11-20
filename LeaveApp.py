@@ -195,68 +195,285 @@ def fill_form(driver, start_date, end_date):
     print("\n[處理中] 正在開啟表單...")
     driver.get(FORM_URL)
 
-    wait = WebDriverWait(driver, 10)
+    wait = WebDriverWait(driver, 20)  # 增加等待時間到 20 秒
 
     try:
         print("[處理中] 正在填寫表單...")
 
         # 等待表單載入
-        time.sleep(2)
+        print("[等待] 等待表單完全載入...")
+        time.sleep(5)  # 增加等待時間
 
-        # 1. 姓名 (第一個文字輸入框)
-        name_input = wait.until(EC.presence_of_element_located(
-            (By.XPATH, "//input[@type='text' and contains(@aria-label, '姓名')]")
-        ))
-        name_input.clear()
-        name_input.send_keys(FIXED_DATA['姓名'])
-        print(f"  ✓ 姓名: {FIXED_DATA['姓名']}")
+        # 1. 姓名 - 使用更通用的選擇器
+        print("[處理中] 填寫姓名...")
+        try:
+            # 嘗試多種選擇器
+            name_input = None
+            selectors = [
+                "//input[@type='text' and contains(@aria-label, '姓名')]",
+                "//input[@type='text'][1]",
+                "//div[@role='listitem'][1]//input[@type='text']"
+            ]
+            for selector in selectors:
+                try:
+                    name_input = wait.until(EC.presence_of_element_located((By.XPATH, selector)))
+                    if name_input:
+                        break
+                except:
+                    continue
+
+            if name_input:
+                name_input.clear()
+                time.sleep(0.5)
+                name_input.send_keys(FIXED_DATA['姓名'])
+                print(f"  ✓ 姓名: {FIXED_DATA['姓名']}")
+            else:
+                raise Exception("找不到姓名欄位")
+        except Exception as e:
+            print(f"  ✗ 姓名填寫失敗: {e}")
+            raise
 
         # 2. 員工代號
-        emp_id_input = driver.find_element(By.XPATH, "//input[@type='text' and contains(@aria-label, '員工代號')]")
-        emp_id_input.clear()
-        emp_id_input.send_keys(FIXED_DATA['員工代號'])
-        print(f"  ✓ 員工代號: {FIXED_DATA['員工代號']}")
+        print("[處理中] 填寫員工代號...")
+        try:
+            emp_selectors = [
+                "//input[@type='text' and contains(@aria-label, '員工代號')]",
+                "//input[@type='text'][2]",
+                "//div[@role='listitem'][2]//input[@type='text']"
+            ]
+            emp_id_input = None
+            for selector in emp_selectors:
+                try:
+                    emp_id_input = driver.find_element(By.XPATH, selector)
+                    if emp_id_input:
+                        break
+                except:
+                    continue
 
-        # 3. 近假/長假 (單選題 - 選擇"近假")
-        radio_option = driver.find_element(By.XPATH, "//span[contains(text(), '近假')]/ancestor::div[@role='radio']")
-        radio_option.click()
-        print(f"  ✓ 請假類型: {FIXED_DATA['近假長假類型']}")
+            if emp_id_input:
+                emp_id_input.clear()
+                time.sleep(0.5)
+                emp_id_input.send_keys(FIXED_DATA['員工代號'])
+                print(f"  ✓ 員工代號: {FIXED_DATA['員工代號']}")
+            else:
+                raise Exception("找不到員工代號欄位")
+        except Exception as e:
+            print(f"  ✗ 員工代號填寫失敗: {e}")
+            raise
 
-        # 4. 假別 (下拉選單 - 選擇"特休")
-        dropdown = driver.find_element(By.XPATH, "//div[@role='listbox']")
-        dropdown.click()
-        time.sleep(0.5)
-        special_leave = driver.find_element(By.XPATH, "//span[contains(text(), '特休')]/ancestor::div[@role='option']")
-        special_leave.click()
-        print(f"  ✓ 假別: {FIXED_DATA['假別']}")
+        # 3. 近假/長假 (單選題)
+        print("[處理中] 選擇請假類型...")
+        try:
+            radio_selectors = [
+                "//span[contains(text(), '近假')]/ancestor::div[@role='radio']",
+                "//div[@role='radio']//span[text()='近假']/..",
+                "//div[@role='radiogroup']//div[@role='radio'][1]"
+            ]
+            radio_option = None
+            for selector in radio_selectors:
+                try:
+                    radio_option = driver.find_element(By.XPATH, selector)
+                    if radio_option:
+                        break
+                except:
+                    continue
+
+            if radio_option:
+                driver.execute_script("arguments[0].scrollIntoView(true);", radio_option)
+                time.sleep(0.5)
+                radio_option.click()
+                print(f"  ✓ 請假類型: {FIXED_DATA['近假長假類型']}")
+            else:
+                raise Exception("找不到請假類型選項")
+        except Exception as e:
+            print(f"  ✗ 請假類型選擇失敗: {e}")
+            raise
+
+        # 4. 假別 (下拉選單)
+        print("[處理中] 選擇假別...")
+        try:
+            time.sleep(1)
+            dropdown_selectors = [
+                "//div[@role='listbox']",
+                "//div[@role='combobox']",
+                "//select"
+            ]
+            dropdown = None
+            for selector in dropdown_selectors:
+                try:
+                    dropdown = driver.find_element(By.XPATH, selector)
+                    if dropdown:
+                        break
+                except:
+                    continue
+
+            if dropdown:
+                driver.execute_script("arguments[0].scrollIntoView(true);", dropdown)
+                time.sleep(0.5)
+                dropdown.click()
+                time.sleep(1)
+
+                # 選擇特休
+                special_selectors = [
+                    "//span[contains(text(), '特休')]/ancestor::div[@role='option']",
+                    "//div[@role='option']//span[text()='特休']/..",
+                    "//div[@role='option' and contains(., '特休')]"
+                ]
+                special_leave = None
+                for selector in special_selectors:
+                    try:
+                        special_leave = driver.find_element(By.XPATH, selector)
+                        if special_leave:
+                            break
+                    except:
+                        continue
+
+                if special_leave:
+                    special_leave.click()
+                    print(f"  ✓ 假別: {FIXED_DATA['假別']}")
+                else:
+                    raise Exception("找不到特休選項")
+            else:
+                raise Exception("找不到假別下拉選單")
+        except Exception as e:
+            print(f"  ✗ 假別選擇失敗: {e}")
+            raise
 
         # 5. 請假起點日期
-        start_date_input = driver.find_element(By.XPATH, "//input[@type='date' and contains(@aria-label, '起點')]")
-        start_date_input.send_keys(start_date)
-        print(f"  ✓ 起始日期: {start_date}")
+        print("[處理中] 填寫起始日期...")
+        try:
+            time.sleep(1)
+            start_selectors = [
+                "//input[@type='date' and contains(@aria-label, '起點')]",
+                "//input[@type='date'][1]",
+                "//input[@type='date']"
+            ]
+            start_date_input = None
+            for selector in start_selectors:
+                try:
+                    start_date_input = driver.find_element(By.XPATH, selector)
+                    if start_date_input:
+                        break
+                except:
+                    continue
+
+            if start_date_input:
+                driver.execute_script("arguments[0].scrollIntoView(true);", start_date_input)
+                time.sleep(0.5)
+                start_date_input.clear()
+                start_date_input.send_keys(start_date)
+                print(f"  ✓ 起始日期: {start_date}")
+            else:
+                raise Exception("找不到起始日期欄位")
+        except Exception as e:
+            print(f"  ✗ 起始日期填寫失敗: {e}")
+            raise
 
         # 6. 請假終點日期
-        end_date_input = driver.find_element(By.XPATH, "//input[@type='date' and contains(@aria-label, '終點')]")
-        end_date_input.send_keys(end_date)
-        print(f"  ✓ 結束日期: {end_date}")
+        print("[處理中] 填寫結束日期...")
+        try:
+            time.sleep(0.5)
+            end_selectors = [
+                "//input[@type='date' and contains(@aria-label, '終點')]",
+                "//input[@type='date'][2]",
+                "(//input[@type='date'])[2]"
+            ]
+            end_date_input = None
+            for selector in end_selectors:
+                try:
+                    end_date_input = driver.find_element(By.XPATH, selector)
+                    if end_date_input:
+                        break
+                except:
+                    continue
+
+            if end_date_input:
+                driver.execute_script("arguments[0].scrollIntoView(true);", end_date_input)
+                time.sleep(0.5)
+                end_date_input.clear()
+                end_date_input.send_keys(end_date)
+                print(f"  ✓ 結束日期: {end_date}")
+            else:
+                raise Exception("找不到結束日期欄位")
+        except Exception as e:
+            print(f"  ✗ 結束日期填寫失敗: {e}")
+            raise
 
         # 7. 確認勾選
-        checkbox = driver.find_element(By.XPATH, "//span[contains(text(), '我確認了')]/ancestor::div[@role='checkbox']")
-        if checkbox.get_attribute('aria-checked') != 'true':
-            checkbox.click()
-        print("  ✓ 已勾選確認")
+        print("[處理中] 勾選確認...")
+        try:
+            time.sleep(0.5)
+            checkbox_selectors = [
+                "//span[contains(text(), '我確認了')]/ancestor::div[@role='checkbox']",
+                "//div[@role='checkbox']//span[contains(text(), '我確認了')]/..",
+                "//div[@role='checkbox']"
+            ]
+            checkbox = None
+            for selector in checkbox_selectors:
+                try:
+                    checkbox = driver.find_element(By.XPATH, selector)
+                    if checkbox:
+                        break
+                except:
+                    continue
+
+            if checkbox:
+                driver.execute_script("arguments[0].scrollIntoView(true);", checkbox)
+                time.sleep(0.5)
+                if checkbox.get_attribute('aria-checked') != 'true':
+                    checkbox.click()
+                print("  ✓ 已勾選確認")
+            else:
+                print("  ⚠ 找不到確認勾選框（可能不是必填）")
+        except Exception as e:
+            print(f"  ⚠ 確認勾選失敗（繼續執行）: {e}")
 
         # 8. 請假密碼
-        password_input = driver.find_element(By.XPATH, "//input[@type='password']")
-        password_input.clear()
-        password_input.send_keys(FIXED_DATA['請假密碼'])
-        print("  ✓ 密碼: ********")
+        print("[處理中] 填寫密碼...")
+        try:
+            time.sleep(0.5)
+            password_selectors = [
+                "//input[@type='password']",
+                "//input[contains(@aria-label, '密碼')]",
+                "//input[@type='password' or @type='text'][last()]"
+            ]
+            password_input = None
+            for selector in password_selectors:
+                try:
+                    password_input = driver.find_element(By.XPATH, selector)
+                    if password_input:
+                        break
+                except:
+                    continue
+
+            if password_input:
+                driver.execute_script("arguments[0].scrollIntoView(true);", password_input)
+                time.sleep(0.5)
+                password_input.clear()
+                password_input.send_keys(FIXED_DATA['請假密碼'])
+                print("  ✓ 密碼: ********")
+            else:
+                raise Exception("找不到密碼欄位")
+        except Exception as e:
+            print(f"  ✗ 密碼填寫失敗: {e}")
+            raise
 
         print("\n[完成] 表單填寫完畢，等待送出時間...")
+        time.sleep(2)  # 給表單一點時間確保所有值都已填入
         return True
 
     except Exception as e:
         print(f"\n[錯誤] 填寫表單時發生錯誤: {e}")
+        print("\n[除錯] 嘗試截圖...")
+        try:
+            screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "form_error.png")
+            driver.save_screenshot(screenshot_path)
+            print(f"[除錯] 截圖已保存至: {screenshot_path}")
+        except:
+            print("[除錯] 無法保存截圖")
+
+        import traceback
+        traceback.print_exc()
         return False
 
 def wait_and_submit(driver, target_time):
