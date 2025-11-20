@@ -168,7 +168,7 @@ def confirm_info(target_time, start_date, end_date):
 def setup_driver():
     """設定 Chrome WebDriver"""
     print("\n[初始化] 正在啟動瀏覽器...")
-    print("[提示] 首次執行會下載 ChromeDriver...")
+    print("[提示] 首次執行會下載 ChromeDriver，請稍候...")
     
     options = Options()
     options.add_argument('--disable-gpu')
@@ -178,11 +178,17 @@ def setup_driver():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
 
-    # 使用 webdriver-manager
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-    driver.maximize_window()
-    return driver
+    try:
+        # 使用 webdriver-manager 自動下載並管理 ChromeDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.maximize_window()
+        print("[成功] 瀏覽器已啟動")
+        return driver
+    except Exception as e:
+        print(f"[錯誤] 無法啟動 Chrome: {e}")
+        print("[提示] 請確認已安裝 Chrome 瀏覽器")
+        raise
 
 def fill_form(driver, start_date, end_date):
     """填寫表單（不送出）"""
